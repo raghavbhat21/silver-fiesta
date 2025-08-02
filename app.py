@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
@@ -38,6 +40,7 @@ def recommend_books():
             "recommendation": "Something went wrong while processing your request."
         })
 
-if __name__ == '__main__':
-    app.run(port=5000)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
