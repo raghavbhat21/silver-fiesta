@@ -1,74 +1,48 @@
 from flask import Flask, request, jsonify
-import os
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
-@app.route("/", methods=["POST"])
-def recommend_books():
-    try:
-        data = request.get_json()
-        
-        # Get user-defined variables from Watson
-        mood = data.get("mood")
-        genre = data.get("genre")
-        author = data.get("author")
-        tag = data.get("tag")  # optional
+# Dummy data for example
+BOOKS = [
+    {"title": "The Alchemist", "genre": "fiction", "author": "Paulo Coelho", "mood": "motivational", "tag": "spiritual"},
+    {"title": "Harry Potter", "genre": "fantasy", "author": "J.K. Rowling", "mood": "exciting", "tag": "magic"},
+    {"title": "The Subtle Art of Not Giving a F*ck", "genre": "self-help", "author": "Mark Manson", "mood": "realistic", "tag": "life"},
+    {"title": "Atomic Habits", "genre": "self-help", "author": "James Clear", "mood": "motivational", "tag": "habit"}
+]
 
-        # Dummy logic - replace with your database or real logic
-        if mood:
-            recommendations = get_books_by_mood(mood)
-        elif genre:
-            recommendations = get_books_by_genre(genre)
-        elif author:
-            recommendations = get_books_by_author(author)
-        elif tag:
-            recommendations = get_books_by_tag(tag)
-        else:
-            recommendations = ["The Alchemist", "To Kill a Mockingbird", "1984"]
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({
+        "endpoints": {
+            "/": "This home page",
+            "/recommend": "Get book recommendations with optional filters (genre, author, mood, tag, limit)"
+        },
+        "example": "/recommend?genre=fantasy&limit=2",
+        "message": "Welcome to the Book Recommendation API"
+    })
 
-        return jsonify({
-            "recommendation": recommendations
-        })
-    
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+@app.route("/recommend", methods=["POST"])
+def recommend():
+    data = request.json
+    genre = data.get("genre")
+    author = data.get("author")
+    mood = data.get("mood")
+    tag = data.get("tag")
+    limit = int(data.get("limit", 5))
 
+    filtered = BOOKS
+    if genre:
+        filtered = [book for book in filtered if book["genre"].lower() == genre.lower()]
+    if author:
+        filtered = [book for book in filtered if book["author"].lower() == author.lower()]
+    if mood:
+        filtered = [book for book in filtered if book["mood"].lower() == mood.lower()]
+    if tag:
+        filtered = [book for book in filtered if book["tag"].lower() == tag.lower()]
 
-def get_books_by_mood(mood):
-    mood = mood.lower()
-    return {
-        "happy": ["Eleanor Oliphant Is Completely Fine", "The Rosie Project"],
-        "sad": ["A Little Life", "The Fault in Our Stars"],
-        "romantic": ["Me Before You", "The Notebook"],
-        "motivated": ["Atomic Habits", "Can’t Hurt Me"]
-    }.get(mood, ["Tuesdays with Morrie", "The Midnight Library"])
-
-
-def get_books_by_genre(genre):
-    genre = genre.lower()
-    return {
-        "fiction": ["The Great Gatsby", "Pride and Prejudice"],
-        "non-fiction": ["Sapiens", "Educated"],
-        "fantasy": ["Harry Potter", "The Hobbit"],
-        "sci-fi": ["Dune", "Ender’s Game"]
-    }.get(genre, ["To Kill a Mockingbird", "The Catcher in the Rye"])
-
-
-def get_books_by_author(author):
-    author = author.lower()
-    return {
-        "jk rowling": ["Harry Potter and the Sorcerer’s Stone", "Fantastic Beasts"],
-        "paulo coelho": ["The Alchemist", "Brida"],
-        "george orwell": ["1984", "Animal Farm"]
-    }.get(author, ["Sorry, I couldn't find books by that author."])
-
-
-def get_books_by_tag(tag):
-    tag = tag.lower()
-    return {
-        "bestseller": ["The Silent Patient", "Verity"],
-        "classic": ["Moby Dick", "War and Peace"]
-    }.get(tag, ["No tag-based recommendations available."])
+    return jsonify({"recommendation": filtered[:limit]})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=10000)
